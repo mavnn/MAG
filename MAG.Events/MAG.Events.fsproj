@@ -5,13 +5,13 @@
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <SchemaVersion>2.0</SchemaVersion>
-    <ProjectGuid>ae7ed81c-cca3-46c1-acc7-161faff0a5ff</ProjectGuid>
+    <ProjectGuid>bf0a35dd-9ff8-41af-b482-8ec55565bc60</ProjectGuid>
     <OutputType>Library</OutputType>
-    <RootNamespace>MAG</RootNamespace>
-    <AssemblyName>MAG</AssemblyName>
+    <RootNamespace>MAG.Events</RootNamespace>
+    <AssemblyName>MAG.Events</AssemblyName>
     <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
     <TargetFSharpCoreVersion>4.3.1.0</TargetFSharpCoreVersion>
-    <Name>MAG</Name>
+    <Name>MAG.Events</Name>
     <TargetFrameworkProfile />
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
@@ -22,7 +22,7 @@
     <OutputPath>bin\Debug\</OutputPath>
     <DefineConstants>DEBUG;TRACE</DefineConstants>
     <WarningLevel>3</WarningLevel>
-    <DocumentationFile>bin\Debug\MAG.XML</DocumentationFile>
+    <DocumentationFile>bin\Debug\MAG.Events.XML</DocumentationFile>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>pdbonly</DebugType>
@@ -31,7 +31,7 @@
     <OutputPath>bin\Release\</OutputPath>
     <DefineConstants>TRACE</DefineConstants>
     <WarningLevel>3</WarningLevel>
-    <DocumentationFile>bin\Release\MAG.XML</DocumentationFile>
+    <DocumentationFile>bin\Release\MAG.Events.XML</DocumentationFile>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="mscorlib" />
@@ -40,24 +40,8 @@
     <Reference Include="System.Numerics" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Domain.fs" />
-    <Compile Include="Card.fs" />
-    <Compile Include="Player.fs" />
-    <Compile Include="Action.fs" />
-    <Compile Include="Decks.fs" />
-    <Compile Include="Game.fs" />
-    <Compile Include="Api.fs" />
+    <Compile Include="Events.fs" />
     <None Include="paket.references" />
-    <None Include="Scripts\load-references.fsx" />
-    <None Include="Scripts\load-project.fsx" />
-    <None Include="Scripts\Script.fsx" />
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\MAG.Events\MAG.Events.fsproj">
-      <Name>MAG.Events</Name>
-      <Project>{bf0a35dd-9ff8-41af-b482-8ec55565bc60}</Project>
-      <Private>True</Private>
-    </ProjectReference>
   </ItemGroup>
   <PropertyGroup>
     <MinimumVisualStudioVersion Condition="'$(MinimumVisualStudioVersion)' == ''">11</MinimumVisualStudioVersion>
@@ -87,17 +71,6 @@
       <ItemGroup>
         <Reference Include="Aether">
           <HintPath>..\packages\Aether\lib\net40\Aether.dll</HintPath>
-          <Private>True</Private>
-          <Paket>True</Paket>
-        </Reference>
-      </ItemGroup>
-    </When>
-  </Choose>
-  <Choose>
-    <When Condition="($(TargetFrameworkIdentifier) == '.NETFramework' And ($(TargetFrameworkVersion) == 'v4.0' Or $(TargetFrameworkVersion) == 'v4.5' Or $(TargetFrameworkVersion) == 'v4.5.1' Or $(TargetFrameworkVersion) == 'v4.5.2' Or $(TargetFrameworkVersion) == 'v4.5.3')) Or ($(TargetFrameworkIdentifier) == 'MonoAndroid') Or ($(TargetFrameworkIdentifier) == 'MonoTouch')">
-      <ItemGroup>
-        <Reference Include="Chessie">
-          <HintPath>..\packages\Chessie\lib\net40\Chessie.dll</HintPath>
           <Private>True</Private>
           <Paket>True</Paket>
         </Reference>
