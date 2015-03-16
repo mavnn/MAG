@@ -46,7 +46,9 @@
     <Compile Include="Action.fs" />
     <Compile Include="Decks.fs" />
     <Compile Include="Game.fs" />
-    <Compile Include="Api.fs" />
+    <Compile Include="Commands.fs" />
+    <Compile Include="Game.Events.fs" />
+    <Compile Include="Game.Commands.fs" />
     <None Include="paket.references" />
     <None Include="Scripts\load-references.fsx" />
     <None Include="Scripts\load-project.fsx" />

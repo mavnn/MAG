@@ -4,7 +4,7 @@ open MAG
 
 let Decks =
     [
-        DeckName "Soo Bank Do",
+        DeckName "Soo Bahk Do",
         [
             [ MegaAttack ("Earth Sink", Defend, Punch) ]
             [ Combo (Punch, Kick)]

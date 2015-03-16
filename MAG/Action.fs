@@ -14,10 +14,3 @@ let isCounter attack counter =
         true
     | _ ->
         false
-
-let apply involved action =
-    { involved with
-        Defender =
-            { involved.Defender with
-                Life = involved.Defender.Life - (action.Damage / 1<damage>) }
-    } |> action.Effect

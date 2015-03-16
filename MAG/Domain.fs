@@ -20,27 +20,21 @@ type speed
 [<Measure>]
 type damage
 
-type Involved =
-    {
-        Attacker : Player
-        Defender : Player
-    }
-
 type ExtraEffect =
-    Involved -> Involved
+    | KnockDownEffect
 
 type Action =
     {
         Suit : Suit
         Speed : int<speed>
         Damage : int<damage>
-        Effect : ExtraEffect
+        Effect : ExtraEffect option
         Originator : PlayerName
     }
 
 type Phase =
-    | Play
-    | Respond of PlayerName * Action
+    | Play of Target : PlayerName option * Card list
+    | Respond of PlayerName * Action * Card list
     | Stance
 
 type Initiative =
@@ -70,24 +64,26 @@ type Winner =
     }
 
 type Game =
+    | Nothing
     | Start of Initiative
     | InProgress of OpenGame
     | Complete of Winner
 
 type Errors =
-    | ``Playing cards you don't have`` of Player
-    | ``Cannot play more than one card from your hand in a single action`` of Player
-    | ``Knockdown can only be used with attack actions`` of Card list
-    | ``Wrong suits`` of Card list
-    | ``Cards do not form an action`` of Card list
+    | ``Game does not exist``
+    | ``Game already exists``
+    | ``Deck does not exist``
+    | ``Playing cards you don't have``
+    | ``Cannot play more than one card from your hand in a single action``
+    | ``Knockdown can only be used with attack actions``
+    | ``Wrong suits``
+    | ``Cards do not form an action``
     | ``Initiative phase has finished``
-    | ``Invalid initiative card`` of PlayerName * Card
-    | ``Playing not taking part in this game`` of PlayerName
-    | ``Playing out of turn`` of PlayerName * Card list
+    | ``You can only play one initiative card``
+    | ``Invalid initiative card``
+    | ``Playing not taking part in this game``
+    | ``Playing out of turn``
     | ``Game is not in progress``
-    | ``You can only put one card in your stance`` of Card list
-    | ``Response is not a counter`` of Card list
-    | ``Responses can only target the original attacker``
-    | ``You cannot put cards in your stance outside your stance phase``
-    | ``You cannot play an attack in your stance phase``
+    | ``You can only put one card in your stance``
+    | ``Response is not a counter``
     | ``Unexpected error``

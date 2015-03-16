@@ -32,13 +32,7 @@ type GameCreated =
         Players : PlayerConfig list
     }
 
-type CardPlayed =
-    {
-        Player : PlayerName
-        Card : Card
-    }
-
-type CardDrawn =
+type CardMoved =
     {
         Player : PlayerName
         Card : Card
@@ -50,15 +44,21 @@ type DamageTaken =
         Damage : int        
     }
 
+type Command = Command of string
+
 type GameEvent =
     | Created of GameCreated
-    | Played of CardPlayed
-    | Drawn of CardDrawn
+    | Played of CardMoved
+    | Drawn of CardMoved
     | DamageTaken of DamageTaken
+    | KnockedDown of PlayerName
     | Target of Target : PlayerName
     | PhaseComplete
+    | CommandRecieved of Command
 
 // Serialization
+open Aether
+open Aether.Operators
 open Chiron
 open Chiron.Operators
 
@@ -70,13 +70,14 @@ type Suit with
         | Throw -> ToJsonDefaults.ToJson "throw"
         | Defend -> ToJsonDefaults.ToJson "defend"
     static member FromJson (_ : Suit) : Json<Suit> =
-        fun json ->
-            match json with
-            | String "punch" -> Value Punch, json
-            | String "kick" -> Value Kick, json
-            | String "throw" -> Value Throw, json
-            | String "defend" -> Value Defend, json
-            | s -> Error (sprintf "Expected suit, found %A" s), json
+            fun x ->
+                match x with
+                | "punch" -> Json.init Punch
+                | "kick" -> Json.init Kick
+                | "throw" -> Json.init Throw
+                | "defend" -> Json.init Defend
+                | s -> Json.error (sprintf "Expected suit, found %A" s)
+        =<< Json.getLensPartial (idLens <-?> Json.StringPIso)
 
 type Card with
     static member private createMega name speed damage =
@@ -123,19 +124,15 @@ type PlayerName with
     static member ToJson (PlayerName p) =
         ToJsonDefaults.ToJson p
     static member FromJson (_ : PlayerName) : Json<PlayerName> =
-        fun json ->
-            match json with
-            | String s -> Value <| PlayerName s, json
-            | x -> Error (sprintf "Expected player name, found %A" x), json
+            fun x -> PlayerName x
+        <!> Json.getLensPartial (idLens <-?> Json.StringPIso)
 
 type DeckName with
     static member ToJson (DeckName d) =
         ToJsonDefaults.ToJson d
     static member FromJson (_ : DeckName) =
-        fun json ->
-            match json with
-            | String s -> Value <| DeckName s, json
-            | x -> Error (sprintf "Expected deck name, found %A" x), json
+            fun x -> DeckName x
+        <!> Json.getLensPartial (idLens <-?> Json.StringPIso)
 
 type PlayerConfig with
     static member ToJson (c : PlayerConfig) =
@@ -158,20 +155,11 @@ type GameCreated with
         <*> Json.read "players"
         <*> Json.read "seed"
 
-type CardPlayed with
-    static member ToJson (t : CardPlayed) =
+type CardMoved with
+    static member ToJson (t : CardMoved) =
         Json.write "player" t.Player
         *> Json.write "card" t.Card
-    static member FromJson (_ : CardPlayed) =
-            fun player card -> { Player = player; Card = card }
-        <!> Json.read "player"
-        <*> Json.read "card"
-
-type CardDrawn with
-    static member ToJson (t : CardDrawn) =
-        Json.write "player" t.Player
-        *> Json.write "card" t.Card
-    static member FromJson (_ : CardDrawn) =
+    static member FromJson (_ : CardMoved) =
             fun player card -> { Player = player; Card = card }
         <!> Json.read "player"
         <*> Json.read "card"
@@ -185,14 +173,66 @@ type DamageTaken with
         <!> Json.read "player"
         <*> Json.read "damage"
 
+type Command with
+    static member ToJson (Command c) =
+        ToJsonDefaults.ToJson c
+    static member FromJson (_ : Command) =
+            fun s -> Command s
+        <!> Json.getLensPartial (idLens <-?> Json.StringPIso)
+
 type GameEvent with
     static member ToJson (g : GameEvent) =
         match g with
         | Created c ->
             Json.write "eventType" "GameCreated"
             *> Json.write "eventData" c
-        | Played(_) -> failwith "Not implemented yet"
-        | Drawn(_) -> failwith "Not implemented yet"
-        | DamageTaken(_) -> failwith "Not implemented yet"
-        | Target(target) -> failwith "Not implemented yet"
-        | PhaseComplete -> failwith "Not implemented yet"
+        | Played p ->
+            Json.write "eventType" "CardPlayed"
+            *> Json.write "eventData" p
+        | Drawn d -> 
+            Json.write "eventType" "CardDrawn"
+            *> Json.write "eventData" d
+        | DamageTaken d ->
+            Json.write "eventType" "DamageTaken"
+            *> Json.write "eventData" d
+        | KnockedDown p ->
+            Json.write "eventType" "KnockedDown"
+            *> Json.write "eventData" p
+        | Target t -> 
+            Json.write "eventType" "Target"
+            *> Json.write "eventData" t
+        | PhaseComplete ->
+            Json.write "eventType" "PhaseComplete"
+        | CommandRecieved c ->
+            Json.write "eventType" "CommandRecieved"
+            *> Json.write "eventData" c
+    static member FromJson (_ : GameEvent) =
+        json {
+            let! t = Json.read "eventType"
+            match t with
+            | "GameCreated" ->
+                let! d = Json.read "eventData"
+                return Created d
+            | "CardPlayed" ->
+                let! d = Json.read "eventData"
+                return Played d
+            | "CardDrawn" ->
+                let! d = Json.read "eventData"
+                return Drawn d
+            | "DamageTaken" ->
+                let! d = Json.read "eventData"
+                return DamageTaken d
+            | "KnockedDown" ->
+                let! d = Json.read "eventData"
+                return KnockedDown d
+            | "Target" ->
+                let! d = Json.read "eventData"
+                return Target d
+            | "PhaseComplete" ->
+                return PhaseComplete
+            | "CommandRecieved" ->
+                let! d = Json.read "eventData"
+                return CommandRecieved d
+            | c ->
+                return! Json.error (sprintf "Expected game event type, found %A" c)
+        }

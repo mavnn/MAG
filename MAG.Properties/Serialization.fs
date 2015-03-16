@@ -14,11 +14,11 @@ type SerializationProperties =
         let (thing2 : Card) =
             (Json.deserialize << Json.parse) thing
         thing2 = s |@ sprintf "%A = %A" thing2 s
-    static member ``GameCreated can be round tripped to JSON`` (s : GameCreated) =
+    static member ``GameEvent can be round tripped to JSON`` (s : GameEvent) =
         let thing =
             Json.serialize s
             |> Json.format
-        let (thing2 : GameCreated) =
+        let (thing2 : GameEvent) =
             (Json.deserialize << Json.parse) thing
         thing2 = s |@ sprintf "%A = %A" thing2 s
 

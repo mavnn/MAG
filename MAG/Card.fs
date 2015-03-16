@@ -13,20 +13,10 @@ let rec private permutations = function
     | []      -> seq [ [] ]
     | x :: xs -> Seq.concat (Seq.map (insertions x) (permutations xs))
 
-let private knockdown involved =
-    { involved with
-        Defender = {
-                    involved.Defender with
-                        Stance = []
-                        Discards =
-                            List.concat [
-                                involved.Defender.Stance
-                                involved.Defender.Discards] } }
-
 let private safeReduce cards reduce xs =
     trial {
         match xs with
-        | [] -> return! fail <| ``Cards do not form an action`` cards
+        | [] -> return! fail ``Cards do not form an action``
         | _ -> return List.reduce reduce xs
     }
 
@@ -34,11 +24,11 @@ let rec private multiCardAttack playerName spdSuit secondSuit damFilter spdReduc
     trial {
         let! attackCards =
             match cards with
-            | [] -> fail <| ``Cards do not form an action`` cards
+            | [] -> fail ``Cards do not form an action``
             | _::t ->
                 match List.length t with
                 | 2 -> ok t
-                | _ -> fail <| ``Cards do not form an action`` cards
+                | _ -> fail ``Cards do not form an action``
         let! attacks =
             attackCards
             |> List.map (fun c -> toAction playerName [c])
@@ -57,11 +47,11 @@ let rec private multiCardAttack playerName spdSuit secondSuit damFilter spdReduc
         match speed, damage with
         | 0<speed>, _
         | _, 0<damage> ->
-            return! fail (``Wrong suits`` cards)
+            return! fail ``Cards do not form an action``
         | _ when attacks |> List.map (fun { Suit = s } -> s) |> List.sort = List.sort[spdSuit;secondSuit] ->
-            return { Suit = spdSuit; Speed = speed; Damage = damage; Effect = id; Originator = playerName }
+            return { Suit = spdSuit; Speed = speed; Damage = damage; Effect = None; Originator = playerName }
         | _ ->
-            return! fail (``Wrong suits`` cards) }
+            return! fail ``Cards do not form an action`` }
 
 and private combo playerName openerSuit comboSuit cards =
     let damFilter =
@@ -83,17 +73,17 @@ and toAction playerName cards =
             | { Suit = Punch }
             | { Suit = Kick }
             | { Suit = Throw } ->
-                return { a with Effect = a.Effect >> knockdown }
+                return { a with Effect = Some KnockDownEffect }
             | _ ->
-                return! fail (``Knockdown can only be used with attack actions`` sorted)
+                return! fail ``Knockdown can only be used with attack actions``
         | Combo (spdSuit, damSuit)::first::second::[] ->
             return! combo playerName spdSuit damSuit sorted
         | MegaAttack (name, spdSuit, damSuit)::first::second::[] ->
             return! mega playerName spdSuit damSuit sorted
         | [Basic (Defend, b)] ->
-            return { Suit = Defend; Speed = 1<speed> * int b; Damage = 0<damage>; Effect = id; Originator = playerName }
+            return { Suit = Defend; Speed = 1<speed> * int b; Damage = 0<damage>; Effect = None; Originator = playerName }
         | [Basic (suit, b)] ->
-            return { Suit = suit; Speed = 1<speed> * int b; Damage = 1<damage> * int b; Effect = id; Originator = playerName }
+            return { Suit = suit; Speed = 1<speed> * int b; Damage = 1<damage> * int b; Effect = None; Originator = playerName }
         | _ ->
-            return! fail (``Cards do not form an action`` sorted)
+            return! fail ``Cards do not form an action``
     }

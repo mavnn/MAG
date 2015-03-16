@@ -1,5 +1,4 @@
 // Warning: generated file; your changes could be lost when a new file is generated.
-#r @"..\..\MAG.Events\bin\Debug\MAG.Events.dll"
 #r @"System.dll"
 #r @"System.Core.dll"
 #r @"System.Numerics.dll"
@@ -8,3 +7,4 @@
 #r @"..\..\packages\FParsec\lib\net40-client\FParsec.dll"
 #r @"..\..\packages\FParsec\lib\net40-client\FParsecCS.dll"
 #r @"..\..\packages\Chessie\lib\net40\Chessie.dll"
+#r @"..\..\MAG.Events\bin\Debug\MAG.Events.dll"

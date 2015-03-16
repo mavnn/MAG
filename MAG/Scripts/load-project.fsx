@@ -6,4 +6,6 @@
       @"..\Action.fs"
       @"..\Decks.fs"
       @"..\Game.fs"
-      @"..\Api.fs"
+      @"..\Commands.fs"
+      @"..\Game.Events.fs"
+      @"..\Game.Commands.fs"
