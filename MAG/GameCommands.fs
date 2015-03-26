@@ -4,10 +4,9 @@ module MAG.GameCommands
 open Chessie.ErrorHandling
 open MAG
 open MAG.Commands
-open MAG.Events
 open MAG.Game
 
-let processStartGame gid players =
+let processStartGame gid (players : PlayerConfig list) =
     trial {
         let allDecks =
             players
