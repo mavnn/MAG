@@ -7,5 +7,5 @@
       @"..\Decks.fs"
       @"..\Game.fs"
       @"..\Commands.fs"
-      @"..\Game.Events.fs"
-      @"..\Game.Commands.fs"
+      @"..\GameEvents.fs"
+      @"..\GameCommands.fs"

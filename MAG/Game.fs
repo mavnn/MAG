@@ -152,7 +152,7 @@ let existsWinner gameState =
             else None
     }
 
-let create (guid : Guid) seed playerConfigs =
+let create gid seed playerConfigs =
     let players =
         playerConfigs
         |> List.map (fun (config : PlayerConfig) ->
@@ -167,7 +167,7 @@ let create (guid : Guid) seed playerConfigs =
         |> Map.ofList
     let start =
         Start {
-            Id = guid
+            Id = gid
             Seed = seed
             Players = players
             InitiativeCards = []

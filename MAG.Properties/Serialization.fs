@@ -6,27 +6,32 @@ open FsCheck.PropOperators
 open MAG
 open NUnit.Framework
 
-type SerializationProperties =
-    static member ``Cards can be round tripped to JSON`` (s : Card) =
-        let thing =
-            Json.serialize s
-            |> Json.format
-        let (thing2 : Card) =
-            (Json.deserialize << Json.parse) thing
-        thing2 = s |@ sprintf "%A = %A" thing2 s
+let inline roundTrip (thing : 'a) : 'a =
+    Json.serialize thing
+    |> Json.format
+    |> Json.parse
+    |> Json.deserialize
+
+type EventSerializationProperties =
     static member ``GameEvent can be round tripped to JSON`` (s : GameEvent) =
-        let thing =
-            Json.serialize s
-            |> Json.format
-        let (thing2 : GameEvent) =
-            (Json.deserialize << Json.parse) thing
-        thing2 = s |@ sprintf "%A = %A" thing2 s
+        let sut = roundTrip s
+        sut = s |@ sprintf "(%A should equal %A)" sut s
+
+type PlayerViewSerializationProperties =
+    static member ``CurrentState can be round tripped to JSON`` (s : MAG.Server.PlayerView.CurrentState) =
+        let sut = roundTrip s
+        sut = s |@ sprintf "(%A should equal %A)" sut s
 
 type SafeString =
     static member SafeString () =
         Arb.Default.String()
-        |> Arb.filter (fun s -> s <> null)
+        |> Arb.filter (fun s ->
+            s <> null)
 
 [<Test>]
-let ``Serilization properties`` () =
-    Check.All<SerializationProperties>({ Config.Verbose with Arbitrary = [typeof<SafeString>] })
+let ``Event Serilization properties`` () =
+    Check.All<EventSerializationProperties>({ Config.VerboseThrowOnFailure with Arbitrary = [typeof<SafeString>] })
+
+[<Test>]
+let ``PlayerView Serilization properties`` () =
+    Check.All<PlayerViewSerializationProperties>({ Config.VerboseThrowOnFailure with Arbitrary = [typeof<SafeString>] })

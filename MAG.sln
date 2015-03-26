@@ -15,6 +15,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		paket.lock = paket.lock
 	EndProjectSection
 EndProject
+Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "MAG.Server", "MAG.Server\MAG.Server.fsproj", "{13AD36BE-C50F-49C0-9069-8022627277B2}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -33,6 +35,10 @@ Global
 		{DB748F65-B3A4-46BB-A6BA-31DB59DED124}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{DB748F65-B3A4-46BB-A6BA-31DB59DED124}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{DB748F65-B3A4-46BB-A6BA-31DB59DED124}.Release|Any CPU.Build.0 = Release|Any CPU
+		{13AD36BE-C50F-49C0-9069-8022627277B2}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{13AD36BE-C50F-49C0-9069-8022627277B2}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{13AD36BE-C50F-49C0-9069-8022627277B2}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{13AD36BE-C50F-49C0-9069-8022627277B2}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

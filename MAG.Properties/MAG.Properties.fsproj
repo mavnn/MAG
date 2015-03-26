@@ -56,25 +56,6 @@
   <Target Name="AfterBuild">
   </Target>
   -->
-  <ItemGroup>
-    <Compile Include="Serialization.fs" />
-    <None Include="paket.references" />
-    <None Include="Script.fsx" />
-  </ItemGroup>
-  <ItemGroup>
-    <Reference Include="mscorlib" />
-    <Reference Include="System" />
-    <Reference Include="System.Core" />
-    <Reference Include="System.Numerics" />
-    <ProjectReference Include="..\MAG.Events\MAG.Events.fsproj">
-      <Name>MAG.Events</Name>
-      <Project>{bf0a35dd-9ff8-41af-b482-8ec55565bc60}</Project>
-      <Private>True</Private>
-    </ProjectReference>
-  </ItemGroup>
-  <ItemGroup>
-    <Content Include="App.config" />
-  </ItemGroup>
   <Choose>
     <When Condition="($(TargetFrameworkIdentifier) == '.NETFramework' And ($(TargetFrameworkVersion) == 'v4.0' Or $(TargetFrameworkVersion) == 'v4.5' Or $(TargetFrameworkVersion) == 'v4.5.1' Or $(TargetFrameworkVersion) == 'v4.5.2' Or $(TargetFrameworkVersion) == 'v4.5.3')) Or ($(TargetFrameworkIdentifier) == 'MonoAndroid') Or ($(TargetFrameworkIdentifier) == 'MonoTouch')">
       <ItemGroup>
@@ -190,6 +171,31 @@
     </When>
   </Choose>
   <ItemGroup>
+    <Compile Include="Serialization.fs" />
+    <None Include="paket.references" />
+    <None Include="Script.fsx" />
+    <Content Include="App.config" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\MAG.Server\MAG.Server.fsproj">
+      <Name>MAG.Server</Name>
+      <Project>{13ad36be-c50f-49c0-9069-8022627277b2}</Project>
+      <Private>True</Private>
+    </ProjectReference>
+    <ProjectReference Include="..\MAG\MAG.fsproj">
+      <Name>MAG</Name>
+      <Project>{ae7ed81c-cca3-46c1-acc7-161faff0a5ff}</Project>
+      <Private>True</Private>
+    </ProjectReference>
+    <Reference Include="mscorlib" />
+    <Reference Include="System" />
+    <Reference Include="System.Core" />
+    <Reference Include="System.Numerics" />
+    <ProjectReference Include="..\MAG.Events\MAG.Events.fsproj">
+      <Name>MAG.Events</Name>
+      <Project>{bf0a35dd-9ff8-41af-b482-8ec55565bc60}</Project>
+      <Private>True</Private>
+    </ProjectReference>
     <Reference Include="nunit.framework">
       <HintPath>..\packages\NUnit\lib\nunit.framework.dll</HintPath>
       <Private>True</Private>

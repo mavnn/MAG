@@ -1,7 +1,9 @@
 source https://nuget.org/api/v2
 
+nuget EventStore.Client
 nuget FSharp.Core
 nuget Chiron
 nuget Chessie
 nuget FsCheck
 nuget NUnit 2.6.4
+nuget Suave

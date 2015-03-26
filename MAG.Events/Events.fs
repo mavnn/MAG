@@ -15,6 +15,8 @@ type Card =
     | MegaAttack of Name : string * Speed : Suit * Damage : Suit
     | Basic of Suit * int
 
+type GameId = GameId of Guid
+
 type PlayerName = PlayerName of string
 
 type DeckName = DeckName of string
@@ -27,34 +29,67 @@ type PlayerConfig =
 
 type GameCreated =
     {
-        Id : Guid
+        Id : GameId
         Seed : int
         Players : PlayerConfig list
     }
 
 type CardMoved =
     {
+        Id : GameId
         Player : PlayerName
         Card : Card
     }
 
 type DamageTaken =
     {
+        Id : GameId
         Player : PlayerName
         Damage : int        
     }
 
-type Command = Command of string
+type Command =
+    {
+        Id : GameId
+        Command : string
+    }
+
+type KnockedDown =
+    {
+        Id : GameId
+        Target : PlayerName
+    }
+
+type Target =
+    {
+        Id : GameId
+        Target : PlayerName
+    }
+
+type PhaseComplete =
+    {
+        Id : GameId
+    }
 
 type GameEvent =
     | Created of GameCreated
     | Played of CardMoved
     | Drawn of CardMoved
     | DamageTaken of DamageTaken
-    | KnockedDown of PlayerName
-    | Target of Target : PlayerName
-    | PhaseComplete
+    | KnockedDown of KnockedDown
+    | Target of Target
+    | PhaseComplete of PhaseComplete
     | CommandRecieved of Command
+    member x.Id =
+        match x with
+        | Created c -> c.Id
+        | Played p -> p.Id
+        | Drawn d -> d.Id
+        | DamageTaken dt -> dt.Id
+        | KnockedDown kd -> kd.Id
+        | Target t -> t.Id
+        | PhaseComplete p -> p.Id
+        | CommandRecieved cr -> cr.Id
 
 // Serialization
 open Aether
@@ -134,6 +169,12 @@ type DeckName with
             fun x -> DeckName x
         <!> Json.getLensPartial (idLens <-?> Json.StringPIso)
 
+type GameId with
+    static member ToJson (GameId gid) =
+        ToJsonDefaults.ToJson gid
+    static member FromJson (_ : GameId) =
+        GameId <!> FromJsonDefaults.FromJson (Guid.NewGuid())
+
 type PlayerConfig with
     static member ToJson (c : PlayerConfig) =
         Json.write "name" c.Name
@@ -145,7 +186,7 @@ type PlayerConfig with
             
 type GameCreated with
     static member ToJson (g : GameCreated) =
-        Json.write "id" (sprintf "%A" g.Id)
+        Json.write "id" g.Id
         *> Json.write "players" g.Players
         *> Json.write "seed" g.Seed
 
@@ -157,28 +198,59 @@ type GameCreated with
 
 type CardMoved with
     static member ToJson (t : CardMoved) =
-        Json.write "player" t.Player
+        Json.write "id" t.Id
+        *> Json.write "player" t.Player
         *> Json.write "card" t.Card
     static member FromJson (_ : CardMoved) =
-            fun player card -> { Player = player; Card = card }
-        <!> Json.read "player"
+            fun gid player card -> { Id = gid; Player = player; Card = card }
+        <!> Json.read "id"
+        <*> Json.read "player"
         <*> Json.read "card"
 
 type DamageTaken with
     static member ToJson (t : DamageTaken) =
-        Json.write "player" t.Player
+        Json.write "id" t.Id
+        *> Json.write "player" t.Player
         *> Json.write "damage" t.Damage
     static member FromJson (_ : DamageTaken) =
-            fun player damage -> { Player = player; Damage = damage }
-        <!> Json.read "player"
+            fun gid player damage -> { Id = gid; Player = player; Damage = damage }
+        <!> Json.read "id"
+        <*> Json.read "player"
         <*> Json.read "damage"
 
 type Command with
-    static member ToJson (Command c) =
-        ToJsonDefaults.ToJson c
+    static member ToJson (c : Command) =
+        Json.write "id" c.Id
+        *> Json.write "command" c.Command        
     static member FromJson (_ : Command) =
-            fun s -> Command s
-        <!> Json.getLensPartial (idLens <-?> Json.StringPIso)
+            fun gid c -> { Id = gid; Command = c }
+        <!> Json.read "id"
+        <*> Json.read "command"
+
+type KnockedDown with
+    static member ToJson (k : KnockedDown) =
+        Json.write "id" k.Id
+        *> Json.write "target" k.Target
+    static member FromJson (_ : KnockedDown) =
+            fun gid t -> { Id = gid; Target = t }
+        <!> Json.read "id"
+        <*> Json.read "target"
+
+type Target with
+    static member ToJson (t : Target) =
+        Json.write "id" t.Id
+        *> Json.write "target" t.Target
+    static member FromJson (_ : Target) =
+            fun gid t -> { Id = gid; Target = t }
+        <!> Json.read "id"
+        <*> Json.read "target"
+
+type PhaseComplete with
+    static member ToJson (p : PhaseComplete) =
+        Json.write "id" p.Id
+    static member FromJson (_ : PhaseComplete) =
+            fun gid -> { Id = gid }
+        <!> Json.read "id"
 
 type GameEvent with
     static member ToJson (g : GameEvent) =
@@ -201,8 +273,9 @@ type GameEvent with
         | Target t -> 
             Json.write "eventType" "Target"
             *> Json.write "eventData" t
-        | PhaseComplete ->
+        | PhaseComplete p ->
             Json.write "eventType" "PhaseComplete"
+            *> Json.write "eventData" p
         | CommandRecieved c ->
             Json.write "eventType" "CommandRecieved"
             *> Json.write "eventData" c
@@ -229,7 +302,8 @@ type GameEvent with
                 let! d = Json.read "eventData"
                 return Target d
             | "PhaseComplete" ->
-                return PhaseComplete
+                let! p = Json.read "eventData"
+                return PhaseComplete p
             | "CommandRecieved" ->
                 let! d = Json.read "eventData"
                 return CommandRecieved d

@@ -2,6 +2,7 @@
 module MAG.GameEvents
 
 open MAG
+open MAG.Events
 open MAG.Game
 open Chessie.ErrorHandling
 

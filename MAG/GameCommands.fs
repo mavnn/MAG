@@ -1,4 +1,5 @@
-﻿module MAG.Game.Commands
+﻿[<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
+module MAG.GameCommands
 
 open Chessie.ErrorHandling
 open MAG
@@ -6,7 +7,7 @@ open MAG.Commands
 open MAG.Events
 open MAG.Game
 
-let processStartGame (guid : System.Guid) players =
+let processStartGame gid players =
     trial {
         let allDecks =
             players
@@ -16,18 +17,20 @@ let processStartGame (guid : System.Guid) players =
             |> List.forall id
         if allDecks then
             let seed =
-                guid.ToByteArray()
-                |> Array.map int
-                |> Array.reduce (+)
-            let created = Created { Id = guid; Seed = seed; Players = players }
-            let! startState = create guid seed players
+                match gid with
+                | GameId guid ->
+                    guid.ToByteArray()
+                    |> Array.map int
+                    |> Array.reduce (+)
+            let created = Created { Id = gid; Seed = seed; Players = players }
+            let! startState = create gid seed players
             let! draws =
                 [for p in players |> List.map (fun c -> c.Name) ->
                     draw 4uy p startState
                     |> lift (fun c -> [for card in c -> (p, card)]) ]
                 |> collect
                 |> lift (List.concat)
-                |> lift (List.map (fun (p, c) -> Drawn { Player = p; Card = c }))
+                |> lift (List.map (fun (p, c) -> Drawn { Id = gid; Player = p; Card = c }))
             return created::draws
         else
             return! fail ``Deck does not exist``
@@ -45,7 +48,7 @@ let processPlayInitiative player card game =
                 else
                     getPlayer player game
                     >>= Player.play [card]
-                    >>= (fun _ -> ok <| Played { Player = player; Card = card})
+                    >>= (fun _ -> ok <| Played { Id = init.Id; Player = player; Card = card})
 
             if initiativeAllPlayed init player card then
                 let! hasDraws =
@@ -59,10 +62,10 @@ let processPlayInitiative player card game =
                             draw 1uy p game
                             |> lift (fun c -> p, List.head c)]
                         |> collect
-                        |> lift (List.map (fun (p, c) -> Drawn { Player = p; Card = c }))
+                        |> lift (List.map (fun (p, c) -> Drawn { Id = init.Id; Player = p; Card = c }))
                     return playedCard::draws
                 else
-                    return [playedCard;PhaseComplete]
+                    return [playedCard;PhaseComplete { Id = init.Id }]
             else
                 return [playedCard]
         }
@@ -84,25 +87,25 @@ let processPlayAttack player target cards game =
                 else
                     match cards with
                     | [] ->
-                        return [PhaseComplete]
+                        return [PhaseComplete { Id = openGame.Id }]
                     | _ ->
                         let played =
                             cards
-                            |> List.map (fun c -> Played { Player = player; Card = c})
+                            |> List.map (fun c -> Played { Id = openGame.Id; Player = player; Card = c})
                         let! drawn =
                             getPlayer player game
                             >>= Player.play cards
                             |> lift (fun (fromHand, _) ->
                                         fromHand |> List.length |> byte)
                             >>= (fun i -> draw i player game)
-                            |> lift (List.map (fun c -> Drawn { Player = player; Card = c }))
+                            |> lift (List.map (fun c -> Drawn { Id = openGame.Id; Player = player; Card = c }))
 
                         return 
                             [
-                                [Target target]
+                                [Target { Id = openGame.Id; Target = target }]
                                 played
                                 drawn
-                                [PhaseComplete]
+                                [PhaseComplete { Id = openGame.Id }]
                             ] |> List.concat
             }
 
@@ -123,16 +126,16 @@ let processCounter player cards game =
                     let kd =
                         match attack.Effect with
                         | Some KnockDownEffect ->
-                            [KnockedDown target]
+                            [KnockedDown { Id = openGame.Id; Target = target }]
                         | None -> []
                     let damage =
-                        [DamageTaken { Player = target; Damage = attack.Damage / 1<damage> }]
+                        [DamageTaken { Id = openGame.Id; Player = target; Damage = attack.Damage / 1<damage> }]
                     return
-                        [kd;damage;[PhaseComplete]] |> List.concat
+                        [kd;damage;[PhaseComplete { Id = openGame.Id }]] |> List.concat
                 else
                     let played =
                         cards
-                        |> List.map (fun c -> Played { Player = player; Card = c})
+                        |> List.map (fun c -> Played { Id = openGame.Id; Player = player; Card = c})
                     let! counter =
                         Card.toAction player cards
                     if Action.isCounter attack counter then
@@ -142,13 +145,13 @@ let processCounter player cards game =
                             |> lift (fun (fromHand, _) ->
                                         fromHand |> List.length |> byte)
                             >>= (fun i -> draw i player game)
-                            |> lift (List.map (fun c -> Drawn { Player = player; Card = c }))
+                            |> lift (List.map (fun c -> Drawn { Id = openGame.Id; Player = player; Card = c }))
 
                         return 
                             [
                                 played
                                 drawn
-                                [PhaseComplete]
+                                [PhaseComplete { Id = openGame.Id }]
                             ] |> List.concat
                     else
                         return! fail ``Response is not a counter``
@@ -170,16 +173,16 @@ let processMoveToStance player card game =
                 trial {
                     match card with
                     | None ->
-                        return [PhaseComplete]
+                        return [PhaseComplete { Id = openGame.Id }]
                     | Some c ->
                         let! p = getPlayer player game
                         if List.exists ((=) c) p.Hand then
-                            let played = Played { Player = player; Card = c }
+                            let played = Played { Id = openGame.Id; Player = player; Card = c }
                             let! drawn =
                                 draw 1uy player game
                                 |> lift (List.head)
-                                |> lift (fun c' -> Drawn { Player = player; Card = c' })
-                            return [played;drawn;PhaseComplete]
+                                |> lift (fun c' -> Drawn { Id = openGame.Id; Player = player; Card = c' })
+                            return [played;drawn;PhaseComplete { Id = openGame.Id }]
                         else
                             return! fail ``Playing cards you don't have`` 
 
@@ -191,8 +194,8 @@ let processMoveToStance player card game =
 
 let processCommand command game =
     match command with
-    | StartGame (guid, players) ->
-        processStartGame guid players
+    | StartGame (gid, players) ->
+        processStartGame gid players
     | PlayInitiative(player, card) ->
         processPlayInitiative player card game
     | PlayAttack(player, target, cards) ->

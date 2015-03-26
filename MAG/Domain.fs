@@ -39,7 +39,7 @@ type Phase =
 
 type Initiative =
     {
-        Id : Guid
+        Id : GameId
         Players : Map<PlayerName, Player>
         InitiativeCards : (PlayerName * Card) list
         Seed : int
@@ -47,7 +47,7 @@ type Initiative =
 
 type OpenGame =
     {
-        Id : Guid
+        Id : GameId
         Turn : PlayerName
         Players : Map<PlayerName, Player>
         TurnOrder : PlayerName list
@@ -57,7 +57,7 @@ type OpenGame =
 
 type Winner =
     {
-        Id : Guid
+        Id : GameId
         Winner : PlayerName
         Players : Map<PlayerName, Player>
         Seed : int
