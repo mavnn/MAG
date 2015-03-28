@@ -50,11 +50,13 @@ let processPlayInitiative player card game =
                     >>= (fun _ -> ok <| Played { Id = init.Id; Player = player; Card = card})
 
             if initiativeAllPlayed init player card then
-                let! hasDraws =
+                let! ordered =
                     (player, card)::init.InitiativeCards
                     |> orderInitiative
-                    |> lift (List.map snd)
-                    |> lift (fun ints -> Seq.distinct ints |> Seq.toList <> ints)
+                let hasDraws =
+                    ordered
+                    |> List.map snd
+                    |> fun ints -> Seq.distinct ints |> Seq.toList <> ints
                 if hasDraws then
                     let! draws =
                         [for p in init.Players |> Map.toList |> List.map fst ->
@@ -64,7 +66,8 @@ let processPlayInitiative player card game =
                         |> lift (List.map (fun (p, c) -> Drawn { Id = init.Id; Player = p; Card = c }))
                     return playedCard::draws
                 else
-                    return [playedCard;PhaseComplete { Id = init.Id }]
+                    let next = ordered |> List.head |> fst
+                    return [playedCard;TurnStarted { Id = init.Id; Player = next }]
             else
                 return [playedCard]
         }
@@ -172,7 +175,8 @@ let processMoveToStance player card game =
                 trial {
                     match card with
                     | None ->
-                        return [PhaseComplete { Id = openGame.Id }]
+                        let! next = nextPlayer game
+                        return [TurnStarted { Id = openGame.Id; Player = next }]
                     | Some c ->
                         let! p = getPlayer player game
                         if List.exists ((=) c) p.Hand then
@@ -181,7 +185,8 @@ let processMoveToStance player card game =
                                 draw 1uy player game
                                 |> lift (List.head)
                                 |> lift (fun c' -> Drawn { Id = openGame.Id; Player = player; Card = c' })
-                            return [played;drawn;PhaseComplete { Id = openGame.Id }]
+                            let! next = nextPlayer game
+                            return [played;drawn;TurnStarted { Id = openGame.Id; Player = next }]
                         else
                             return! fail ``Playing cards you don't have`` 
 
@@ -191,7 +196,7 @@ let processMoveToStance player card game =
     | _ ->
         fail ``Playing out of turn``
 
-let processCommand command game =
+let processCommand game command =
     match command with
     | StartGame (gid, players) ->
         processStartGame gid players

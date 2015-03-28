@@ -22,14 +22,16 @@ type Them =
 
 type WaitingFor =
     | YouToPlayInitiative
-    | YouToCounter of Card list
-    | YouToAttack
+    | YouToCounter of PlayerName * Card list
+    | YouToAttack of PlayerName option
     | YouToMoveStance
-    | Them of PlayerName
+    | Them of PlayerName * Card list option
+    | ThemToMoveStance of PlayerName
     | ThemToPlayInitiative of PlayerName list
 
 type OnGoing =
     {
+        Turn : PlayerName option
         You : You
         Them : Them list
         WaitingFor : WaitingFor
@@ -96,7 +98,7 @@ open System
 open System.Text.RegularExpressions
 
 let (|Match|_|) (pat:string) (inp:string) =
-    let m = Regex.Match(inp, pat)
+    let m = Regex.Match(inp, pat, RegexOptions.Multiline)
     if m.Success
     then Some (List.tail [ for g in m.Groups -> g.Value ])
     else None
@@ -106,18 +108,24 @@ type WaitingFor with
         match w with
         | YouToPlayInitiative ->
             Json.write "waiting" "You to play initiative"
-        | YouToCounter cards ->
+        | YouToCounter (attacker, cards) ->
             Json.write "waiting" "You to counter"            
+            *> Json.write "attacker" attacker
             *> Json.write "cards" cards
-        | YouToAttack ->
+        | YouToAttack t ->
             Json.write "waiting" "You to attack"
+            *> Json.write "target" t
         | YouToMoveStance ->
             Json.write "waiting" "You to move a card to stance"
-        | Them (PlayerName player) ->
+        | Them (PlayerName player, cards) ->
             Json.write "waiting" (sprintf "%s to play" player)
+            *> Json.write "cards" cards
         | ThemToPlayInitiative players ->
             Json.write "waiting" "For others to play initiative"
             *> Json.write "others" players
+        | ThemToMoveStance player ->
+            Json.write "waiting" "For them to move to stance"
+            *> Json.write "player" player
     static member FromJson (_ : WaitingFor) =
         json {
             let! waiting = Json.read "waiting"
@@ -126,16 +134,22 @@ type WaitingFor with
                 return YouToPlayInitiative
             | "You to counter" ->
                 let! cards = Json.read "cards"
-                return YouToCounter cards
+                let! attacker = Json.read "attacker"
+                return YouToCounter (attacker, cards)
             | "You to attack" ->
-                return YouToAttack
+                let! target = Json.read "target"
+                return YouToAttack target
             | "You to move a card to stance" ->
                 return YouToMoveStance
             | Match "(.*) to play$" (x::[]) ->
-                return Them (PlayerName x)
+                let! cards = Json.read "cards"
+                return Them (PlayerName x, cards)
             | "For others to play initiative" ->
                 let! others = Json.read "others"
                 return ThemToPlayInitiative others
+            | "For them to move to stance" ->
+                let! player = Json.read "player"
+                return ThemToMoveStance player
             | _ ->
                 return! Json.error (sprintf "Unknown waiting for %s" waiting)
         }
@@ -145,11 +159,13 @@ type OnGoing with
         Json.write "you" o.You
         *> Json.write "them" o.Them
         *> Json.write "waitingFor" o.WaitingFor
+        *> Json.write "turn" o.Turn
     static member FromJson (_ : OnGoing) =
-            fun y t w -> { You = y; Them = t; WaitingFor = w }
+            fun y t w p -> { You = y; Them = t; WaitingFor = w; Turn = p }
         <!> Json.read "you"
         <*> Json.read "them"
         <*> Json.read "waitingFor"
+        <*> Json.read "turn"
 
 type Finished with
     static member ToJson (o : Finished) =

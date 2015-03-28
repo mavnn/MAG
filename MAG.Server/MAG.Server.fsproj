@@ -37,33 +37,6 @@
     <DocumentationFile>bin\Release\MAG.Server.XML</DocumentationFile>
     <Prefer32Bit>true</Prefer32Bit>
   </PropertyGroup>
-  <ItemGroup>
-    <Reference Include="mscorlib" />
-    <Reference Include="System" />
-    <Reference Include="System.Core" />
-    <Reference Include="System.Numerics" />
-  </ItemGroup>
-  <ItemGroup>
-    <Compile Include="EventStore.fs" />
-    <Compile Include="PlayerView.fs" />
-    <Compile Include="Fold.fs" />
-    <Compile Include="UI.fs" />
-    <Compile Include="Program.fs" />
-    <None Include="App.config" />
-    <None Include="paket.references" />
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\MAG.Events\MAG.Events.fsproj">
-      <Name>MAG.Events</Name>
-      <Project>{bf0a35dd-9ff8-41af-b482-8ec55565bc60}</Project>
-      <Private>True</Private>
-    </ProjectReference>
-    <ProjectReference Include="..\MAG\MAG.fsproj">
-      <Name>MAG</Name>
-      <Project>{ae7ed81c-cca3-46c1-acc7-161faff0a5ff}</Project>
-      <Private>True</Private>
-    </ProjectReference>
-  </ItemGroup>
   <PropertyGroup>
     <MinimumVisualStudioVersion Condition="'$(MinimumVisualStudioVersion)' == ''">11</MinimumVisualStudioVersion>
   </PropertyGroup>
@@ -243,4 +216,54 @@
       </ItemGroup>
     </When>
   </Choose>
+  <ItemGroup>
+    <Compile Include="PlayerView.fs" />
+    <Compile Include="Fold.fs" />
+    <Compile Include="EventStore.fs" />
+    <Compile Include="UI.fs" />
+    <Compile Include="Program.fs" />
+    <None Include="App.config" />
+    <None Include="paket.references" />
+    <Content Include="jquery.js">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="JSXTransformer.js">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="react.js">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="bootstrap.css">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="bootstrap.js">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="bootstrap-theme.css">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="bootstrap.css.map">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="bootstrap-theme.css.map">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+  <ItemGroup>
+    <Reference Include="mscorlib" />
+    <Reference Include="System" />
+    <Reference Include="System.Core" />
+    <Reference Include="System.Numerics" />
+    <Reference Include="System.Runtime.Caching" />
+    <ProjectReference Include="..\MAG.Events\MAG.Events.fsproj">
+      <Name>MAG.Events</Name>
+      <Project>{bf0a35dd-9ff8-41af-b482-8ec55565bc60}</Project>
+      <Private>True</Private>
+    </ProjectReference>
+    <ProjectReference Include="..\MAG\MAG.fsproj">
+      <Name>MAG</Name>
+      <Project>{ae7ed81c-cca3-46c1-acc7-161faff0a5ff}</Project>
+      <Private>True</Private>
+    </ProjectReference>
+  </ItemGroup>
 </Project>

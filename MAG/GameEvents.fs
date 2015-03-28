@@ -139,6 +139,13 @@ let processPhaseComplete game =
                     return InProgress { openGame with Phase = Respond(attack.Originator, counter, []) }
         | InProgress ({ Phase = Play _} as openGame) ->
             return InProgress { openGame with Phase = Stance }
+        | _ ->
+            return! fail ``Unexpected error``
+    }
+
+let processTurnStarted player game =
+    trial {
+        match game with
         | Start init ->
             let! order =
                 init.InitiativeCards
@@ -149,18 +156,21 @@ let processPhaseComplete game =
                     Id = init.Id
                     Players = init.Players
                     TurnOrder = order
-                    Turn = order |> List.head
+                    Turn = player
                     Phase = Play (None, [])
                     Seed = init.Seed
                 }
+        | InProgress og ->
+            return InProgress { og with Turn = player; Phase = Play (None, [])}
         | _ ->
             return! fail ``Unexpected error``
     }
+    
 
 let processCommandRecieved cmd game =
     ok game
 
-let processEvent event game =
+let processEvent game event =
     match event with
     | Created c ->
         processCreated c game
@@ -176,5 +186,7 @@ let processEvent event game =
         processTarget target.Target game
     | PhaseComplete _ ->
         processPhaseComplete game
+    | TurnStarted t ->
+        processTurnStarted t.Player game
     | CommandRecieved cmd ->
         processCommandRecieved cmd game

@@ -45,6 +45,12 @@ type PhaseComplete =
         Id : GameId
     }
 
+type TurnStarted =
+    {
+        Id : GameId
+        Player : PlayerName
+    }
+
 type GameEvent =
     | Created of GameCreated
     | Played of CardMoved
@@ -53,6 +59,7 @@ type GameEvent =
     | KnockedDown of KnockedDown
     | Target of Target
     | PhaseComplete of PhaseComplete
+    | TurnStarted of TurnStarted
     | CommandRecieved of Command
     member x.Id =
         match x with
@@ -63,6 +70,7 @@ type GameEvent =
         | KnockedDown kd -> kd.Id
         | Target t -> t.Id
         | PhaseComplete p -> p.Id
+        | TurnStarted t -> t.Id
         | CommandRecieved cr -> cr.Id
 
 // Serialization
@@ -140,6 +148,15 @@ type PhaseComplete with
             fun gid -> { Id = gid }
         <!> Json.read "id"
 
+type TurnStarted with
+    static member ToJson (t : TurnStarted) =
+        Json.write "id" t.Id
+        *> Json.write "player" t.Player
+    static member FromJson (_ : TurnStarted) =
+            fun gid name -> { Id = gid; Player = name }
+        <!> Json.read "id"
+        <*> Json.read "player"
+
 type GameEvent with
     static member ToJson (g : GameEvent) =
         match g with
@@ -164,6 +181,9 @@ type GameEvent with
         | PhaseComplete p ->
             Json.write "eventType" "PhaseComplete"
             *> Json.write "eventData" p
+        | TurnStarted t ->
+            Json.write "eventType" "TurnStarted"
+            *> Json.write "eventData" t
         | CommandRecieved c ->
             Json.write "eventType" "CommandRecieved"
             *> Json.write "eventData" c
@@ -192,6 +212,9 @@ type GameEvent with
             | "PhaseComplete" ->
                 let! p = Json.read "eventData"
                 return PhaseComplete p
+            | "TurnStarted" ->
+                let! t = Json.read "eventData"
+                return TurnStarted t
             | "CommandRecieved" ->
                 let! d = Json.read "eventData"
                 return CommandRecieved d

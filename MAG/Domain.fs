@@ -2,7 +2,7 @@
 module MAG.Domain
 
 open System
-open MAG.Events
+open MAG
 
 type Player =
     {

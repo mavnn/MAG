@@ -1,5 +1,6 @@
 ﻿module MAG.Server.EventStore
 
+open System
 open MAG
 open EventStore.ClientAPI
 open Chiron
@@ -28,36 +29,26 @@ let inline decode (bytes : byte []) =
     |> Json.parse
     |> Json.deserialize
 
-type State = {
-        Generation : int
-        Game : Game
-    }
-
-let eventFold result event =
-    result |> bind (fun state ->
-        GameEvents.processEvent event state.Game
-        |> lift (fun g -> { Generation = state.Generation + 1; Game = g }))
-
-let start = trial { return { Generation = -1; Game = Nothing } }
-
-let foldEvents2 state events =
-    Seq.fold eventFold state events
-
-let readEvents gid : GameEvent seq =
-    let rec inner i =
-        seq {
-            let slice = store.ReadStreamEventsForwardAsync(sprintf "game-%s" gid, i, 10, true).Result
-            let events =
+let inline refresh currentState eventNumber fold streamName =
+    let rec inner currentState eventNumber fold streamName =
+        async {
+            let! slice =
+                store.ReadStreamEventsForwardAsync(streamName, eventNumber, 10, true)
+                |> Async.AwaitTask
+            let nextState =
                 slice.Events
-                |> Seq.map (fun e -> e.Event.Data)
-            yield!
-                events
-                |> Seq.map decode
-            if not slice.IsEndOfStream then
-                yield! inner (slice.NextEventNumber)
+                |> Seq.map (fun e -> e.Event.Data |> decode)
+                |> Seq.fold fold currentState
+            if slice.IsEndOfStream then
+                return (nextState, slice.LastEventNumber)
+            else
+                return! inner nextState slice.NextEventNumber fold streamName
         }
-    inner 0
+    inner currentState eventNumber fold streamName
 
-let reloaded gid =
-    readEvents gid
-    |> foldEvents2 start
+let inline persist expected eventType events streamName =
+    events
+    |> Seq.map (fun e -> EventData(Guid.NewGuid(), eventType, true, encode e, [||]))
+    |> fun eventDatas -> store.AppendToStreamAsync(streamName, expected, eventDatas)
+    |> Async.AwaitTask
+    |> Async.map (fun wr -> wr.NextExpectedVersion)
