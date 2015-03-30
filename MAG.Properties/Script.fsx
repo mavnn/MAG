@@ -1,8 +1,15 @@
-﻿// Learn more about F# at http://fsharp.net. See the 'F# Tutorial' project
-// for more guidance on F# programming.
+﻿
+type Addition<'a> =
+    | Add of 'a * 'a
+    | Const of 'a
 
-#load "Library1.fs"
-open MAG.Properties
+type Mult<'a> =
+    | Mult of 'a *'a
 
-// Define your library scripting code here
-
+let (|Add'|Const'|Mult'|) x =
+    match x with
+    | Choice1Of2 (Add (a, a')) -> Add'(a, a')
+    | Choice1Of2 (Const a) -> Const' a
+    | Choice2Of2 (Mult (a, a')) -> Mult' (a, a')
+        
+        

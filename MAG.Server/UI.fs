@@ -200,7 +200,7 @@ let html player gid =
                 },
                 render: function () {
                     var cards = this.props.cards.map(
-                            function (card) { return (<option value="{ card }" onChange={ this.handleChange }><Card card={card} /></option>); }
+                            function (card) { return (<option value="{ card }"><Card card={card} /></option>); }
                         );
                     return (
                         <select value={this.state.value}>
@@ -214,14 +214,24 @@ let html player gid =
             var StanceSelect = React.createClass({
                 getInitialState: function() { return { value: [] }; },
                 handleChange: function(e) {
-                    this.setState({ value: e.target.value });
+                    console.log(e.target);
+                    console.log(e.target.value);
+                    if (this.state.value.indexOf(e.target.value)) {
+                        this.state.value.push(e.target.value);
+                        console.log(this.state.value);
+                    } else {
+                        this.setState({ value: [] });
+                        console.log(this.state.value);
+                    }
                 },
                 render: function () {
                     var cards = this.props.cards.map(
-                            function (card) { return (<option value="{ card }" onChange={ this.handleChange }><Card card={card} /></option>); }
+                            function (card, i) { 
+                                return (<option key={ i } value={ i }><Card card={card} /></option>);
+                            }
                         );
                     return (
-                        <select multiple={true} value={this.state.value}>{cards}</select>
+                        <select multiple={true} value={this.state.value} onChange={ this.handleChange }>{cards}</select>
                     );
                 }
             });

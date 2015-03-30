@@ -49,7 +49,7 @@ let commandFold sideEffect result command =
 let foldCommands sideEffect state =
     List.fold (commandFold sideEffect) state
 
-let start = ok Nothing
+let start : Result<Game, Errors> = ok Nothing
 
 let commands =
     [
