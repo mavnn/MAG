@@ -52,7 +52,8 @@ let api =
 let ui =
     GET >>=
         choose [
-            pathScan "/play/%s/%s" <| fun (name, gid) -> OK (UI.html name gid)
+            path "/" >>= OK (UI.gameCreate (MAG.Decks.Decks |> Map.toList |> List.map fst))
+            pathScan "/play/%s/%s" <| fun (name, gid) -> OK (UI.playerViewHtml name gid)
             browseHome
         ]
 

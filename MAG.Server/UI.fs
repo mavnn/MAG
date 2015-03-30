@@ -114,7 +114,136 @@ let postMoveToStance gid player cardStr =
             return failwith <| sprintf "%A" error
     }
 
-let html player gid = 
+let gameCreate decks = 
+    let deckControls =
+        decks
+        |> List.mapi (fun i (DeckName d) -> sprintf "<option value=\"%d\">%s</option>" i d)
+        |> String.concat "\n"
+    let deckDictionary =
+        decks
+        |> List.mapi (fun i (DeckName d) -> sprintf """ "%d": "%s" """ i d)
+        |> String.concat ", "
+        |> sprintf "{ %s }"
+    sprintf """<!DOCTYPE html>
+<html>
+    <head>
+        <script src="/react.js"></script>
+        <script src="/JSXTransformer.js"></script>
+        <script src="/jquery.js"></script>
+        <link rel="stylesheet" href="/bootstrap.css">
+        <link rel="stylesheet" href="/bootstrap-theme.css">
+        <script src="/bootstrap.js"></script> 
+    </head>
+    <body>
+        <div id="main" class="container-fluid"></div>
+        <script type="text/jsx">
+            var DeckSelect = React.createClass({
+                getInitialState: function() {
+                    return {
+                        decks: %s,
+                        value: 0
+                    };
+                },
+                handleChange: function(e) {
+                    this.state.value = e.target.value;                    
+                    this.forceUpdate();
+                    this.props.callBack(this.state.decks[this.state.value]);
+                },
+                render: function() {
+                    return (<select value={this.state.value} onChange={this.handleChange}>
+                        %s
+                    </select>);
+                }
+            });
+
+            var PlayerConfig = React.createClass({
+                getInitialState: function() {
+                    return {name:"",deck:""};
+                },
+                deckChanged: function(deck) {
+                    this.state.deck = deck;
+                    this.forceUpdate();
+                    this.props.callBack(this.state);
+                },
+                nameChanged: function(e) {
+                    this.state.name = e.target.value;
+                    this.forceUpdate();
+                    this.props.callBack(this.state);
+                },
+                render: function() {
+                    return (<div>
+                        <input type="text" value={this.state.name} onChange={this.nameChanged} />
+                        <DeckSelect callBack={this.deckChanged} />
+                    </div>);
+                }
+            });
+
+            var GameCreate = React.createClass({
+                getInitialState: function() {
+                    return {
+                        player1: {name:"",deck:""},
+                        player2: {name:"",deck:""},
+                        result: null
+                    };
+                },
+                update1: function (player) {
+                    this.state.player1 = player;
+                },
+                update2: function (player) {
+                    this.state.player2 = player;
+                },
+                submit: function(e) {
+                    e.preventDefault();
+                    this.post([this.state.player1, this.state.player2]);
+                },
+                post: function (data) {
+                    console.log(data);
+                    var baseUrl = '/api/game';
+                    $.ajax({
+                        url: baseUrl,
+                        dataType: 'json',
+                        type: 'POST',
+                        data: JSON.stringify(data),
+                        success: function (d) {
+                            this.state.result = d;
+                            this.forceUpdate();
+                        }.bind(this),
+                        error: function (xhr, status, error) {
+                            console.error(baseUrl, status, error.toString());
+                        }.bind(this)
+                    });
+                },
+                render: function() {
+                    var gameForm = (<div>
+                        <form onSubmit={this.submit}>
+                            <h3>Player 1</h3>
+                            <PlayerConfig callBack={ this.update1 } />
+                            <h3>Player 2</h3>
+                            <PlayerConfig callBack={ this.update2 } />
+                            <input type="submit" action="POST" />
+                        </form>
+                        </div>);
+                    var linksToGame = (<div>
+                        <a href={ "/play/" + this.state.player1.name + "/" + this.state.result }>{ this.state.player1.name }</a>
+                        <a href={ "/play/" + this.state.player2.name + "/" + this.state.result }>{ this.state.player2.name }</a>
+                    </div>);
+                    if(this.state.result === null) {
+                        return gameForm;
+                    } else {
+                        return linksToGame;
+                    }
+                }
+            });
+
+            React.render(
+                <GameCreate />,
+                document.getElementById('main')
+            );
+        </script>
+    </body>
+</html>""" deckDictionary deckControls
+
+let playerViewHtml player gid = 
     sprintf """<!DOCTYPE html>
 <html>
     <head>
@@ -196,16 +325,23 @@ let html player gid =
             var HandSelect = React.createClass({
                 getInitialState: function() { return { value: null }; },
                 handleChange: function(e) {
+                    var card;
+                    if (e.target.value == -1) {
+                        card = null;
+                    } else {
+                        card = this.props.cards[e.target.value];
+                    }
                     this.setState({ value: e.target.value });
+                    this.props.callBack(card);
                 },
                 render: function () {
                     var cards = this.props.cards.map(
-                            function (card) { return (<option value="{ card }"><Card card={card} /></option>); }
+                            function (card, i) { return (<option value={ i }><Card card={card} /></option>); }
                         );
                     return (
-                        <select value={this.state.value}>
+                        <select value={this.state.value} onChange={ this.handleChange }>
                             {cards}
-                            <option value={null} onChange={ this.handleChange }>None</option>
+                            <option value="-1">None</option>
                         </select>
                     );
                 }
@@ -214,15 +350,14 @@ let html player gid =
             var StanceSelect = React.createClass({
                 getInitialState: function() { return { value: [] }; },
                 handleChange: function(e) {
-                    console.log(e.target);
-                    console.log(e.target.value);
-                    if (this.state.value.indexOf(e.target.value)) {
-                        this.state.value.push(e.target.value);
-                        console.log(this.state.value);
+                    if (e.target.value === "") {
+                        this.state.value.length = 0;
                     } else {
-                        this.setState({ value: [] });
-                        console.log(this.state.value);
+                        this.state.value.push(e.target.value);
                     }
+                    var cards = this.props.cards;
+                    var selected = this.state.value.map(function (i) { return cards[i]; });
+                    this.props.callBack(selected);
                 },
                 render: function () {
                     var cards = this.props.cards.map(
@@ -236,14 +371,56 @@ let html player gid =
                 }
             });
 
+            var TargetSelect = React.createClass({
+                getInitialState: function() { return { value: "-1" }; },
+                handleChange: function(e) {
+                    var target;
+                    if (e.target.value === "-1") {
+                        target = null;
+                    } else {
+                        target = this.props.them[e.target.value];
+                    }
+                    this.props.callBack(target);
+                    this.state.value = e.target.value;
+                },
+                render: function () {
+                    var targets = this.props.them.map(
+                            function (t, i) { return (<option value={ i }>{ t }</option>); }
+                        );
+                    return (
+                        <select value={this.state.value} onChange={ this.handleChange }>
+                            {targets}
+                            <option value="-1">None</option>
+                        </select>
+                    );
+                }
+            });
+
             var CommandBox = React.createClass({
+                getInitialState: function() {
+                    return {
+                        hand: null,
+                        stance: [],
+                        target: null
+                    };
+                },
+                stanceUpdated: function(stance) {
+                    this.state.stance = stance;
+                },
+                handUpdated: function(hand) {
+                    this.state.hand = hand;
+                },
+                targetUpdated: function(target) {
+                    this.state.target = target;
+                },
                 post: function (action, data) {
+                    console.log(data);
                     var baseUrl = '/api/player/' + player + '/' + gid + '/';
                     $.ajax({
                         url: baseUrl + action,
                         dataType: 'json',
                         type: 'POST',
-                        data: data,
+                        data: JSON.stringify(data),
                         success: function (d) {
                             return;
                         },
@@ -255,50 +432,63 @@ let html player gid =
                 handleSubmit: function (action, e) {
                     e.preventDefault();
                     if (action === 'initiative') {
-                        var card = React.findDOMNode(this.refs.card).value.trim();
+                        var card = this.state.hand;
                         this.post(action, card);
                     } else if (action === 'stance') {
-                        var card = React.findDOMNode(this.refs.card).value.trim();
+                        var card = this.state.hand;
                         this.post(action, card);
                     } else if (action === 'counter') {
-                        console.log("other stuff");
-                        var cards = React.findDOMNode(this.refs.cards).value.trim();
+                        var hand = this.state.hand;
+                        var cards = this.state.stance.slice(0);
+                        if (hand != null) { cards.push(hand); }
                         this.post(action, cards);
                     } else if (action === 'attack') {
-                        var cards = React.findDOMNode(this.refs.cards).value.trim();
-                        var target = React.findDOMNode(this.refs.target).value.trim();
-                        this.post(action, [target, cards]);
+                        var hand = this.state.hand;
+                        var cards = this.state.stance.slice(0);
+                        if (hand != null) { cards.push(hand); }
+                        this.post(action, [this.state.target, cards]);
                     }
                 },
                 render: function () {
                     if (this.props.waiting === 'You to play initiative') {
                         var action = 'initiative';
                         return (<form className="commentForm" onSubmit={this.handleSubmit.bind(null, action)}>
-                                    <HandSelect cards={this.props.hand} />
+                                    <HandSelect cards={this.props.hand} callBack={this.handUpdated} />
                                     <input type="submit" value="Post" />
                                 </form>);
                     } else if (this.props.waiting === 'You to move a card to stance') {
                         var action = 'stance';
                         return (<form className="commentForm" onSubmit={this.handleSubmit.bind(null, action)}>
-                                    <HandSelect cards={this.props.hand} />
+                                    <HandSelect cards={this.props.hand} callBack={this.handUpdated} />
                                     <input type="submit" value="Post" />
                                 </form>);
                     } else if (this.props.waiting === 'You to counter') {
                         var action = 'counter';
                         return (<form className="commentForm" onSubmit={this.handleSubmit.bind(null, action)}>
-                                    <HandSelect cards={this.props.hand} />
+                                    <HandSelect cards={this.props.hand} callBack={this.handUpdated} />
+                                    <StanceSelect cards={this.props.stance} callBack={this.stanceUpdated} />
                                     <input type="submit" value="Post" />
                                 </form>);
                     } else if (this.props.waiting === 'You to attack') {
                         var action = 'attack';
                         return (<form className="commentForm" onSubmit={this.handleSubmit.bind(null, action)}>
-                                    <input type="text" placeholder="A target" ref="playerName" />
-                                    <HandSelect cards={this.props.hand} />
-                                    <StanceSelect cards={this.props.stance} />
+                                    <TargetSelect them={this.props.them} callBack={this.targetUpdated} />
+                                    <HandSelect cards={this.props.hand} callBack={this.handUpdated} />
+                                    <StanceSelect cards={this.props.stance} callBack={this.stanceUpdated} />
                                     <input type="submit" value="Post" />
                                 </form>);
                     }
                     return (<div />);
+                }
+            });
+
+            var WaitingFor = React.createClass({
+                render: function () {
+                    if (this.props.waitingFor.waiting === "You to counter") {
+                        return (<span>You to counter {this.props.waitingFor.attacker}'s attack of <CardList cards={this.props.waitingFor.cards} /></span>);
+                    } else {
+                        return (<span>{this.props.waitingFor.waiting}</span>);
+                    }
                 }
             });
 
@@ -333,17 +523,19 @@ let html player gid =
                 },
                 componentDidMount: function () {
                     this.loadData();
-                    setInterval(this.loadData, 1000);
+                    setInterval(this.loadData, 5000);
                 },
                 render: function () {
+                    console.log(this.state.download[0].data.waitingFor);
                     var waiting = this.state.download[0].data.waitingFor.waiting;
                     var you = this.state.download[0].data.you;
+                    var theirNames = this.state.download[0].data.them.map(function (t) { return t.name; });
                     return (
                         <div>
-                            <h3>The game is waiting for: { waiting } during { this.state.download[0].data.turn }'s turn</h3>
+                            <h3>The game is waiting for: <WaitingFor waitingFor={this.state.download[0].data.waitingFor} /> during { this.state.download[0].data.turn }'s turn</h3>
                             <You you={ you } />
                             <ThemList them={ this.state.download[0].data.them } />
-                            <CommandBox waiting={ waiting } hand={ you.hand } stance={ you.stance } />
+                            <CommandBox waiting={ waiting } hand={ you.hand } stance={ you.stance } them={ theirNames } />
                         </div>);
                 }
             });
