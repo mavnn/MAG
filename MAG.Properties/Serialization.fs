@@ -29,9 +29,9 @@ type SafeString =
             s <> null)
 
 [<Test>]
-let ``Event Serilization properties`` () =
+let ``Event Serialization properties`` () =
     Check.All<EventSerializationProperties>({ Config.VerboseThrowOnFailure with Arbitrary = [typeof<SafeString>] })
 
 [<Test>]
-let ``PlayerView Serilization properties`` () =
+let ``PlayerView Serialization properties`` () =
     Check.All<PlayerViewSerializationProperties>({ Config.VerboseThrowOnFailure with Arbitrary = [typeof<SafeString>] })
